@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-if(CMAKE_HOST_APPLE AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+if(CMAKE_HOST_APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 endif()
 project(PC98PLAYER LANGUAGES CXX)
@@ -46,24 +46,45 @@ if(WIN32)
 elseif(APPLE)
   find_package(Iconv REQUIRED)
   target_link_libraries(pc98core PUBLIC Iconv::Iconv)
-  set(MAC_RESOURCES LICENSE THIRD-PARTY-ymfm-LICENSE.txt)
-  set_source_files_properties(${MAC_RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-  add_executable(PC98PLAYER MACOSX_BUNDLE macos/main.mm macos/font.mm ${MAC_RESOURCES})
-  target_compile_options(PC98PLAYER PRIVATE -fobjc-arc)
-  target_link_libraries(PC98PLAYER PRIVATE pc98core "-framework Cocoa" "-framework CoreText" "-framework AudioToolbox")
-  set_target_properties(PC98PLAYER PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist.in"
-    MACOSX_BUNDLE_BUNDLE_NAME "PC98PLAYER"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "jp.pc98player.mac"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-    MACOSX_BUNDLE_BUNDLE_VERSION "1")
+  if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(IOS_RESOURCES LICENSE THIRD-PARTY-ymfm-LICENSE.txt)
+    set_source_files_properties(${IOS_RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    add_executable(PC98PLAYERiOS MACOSX_BUNDLE ios/main.mm ios/Keyboard.mm apple/font.mm apple/GameLibrary.mm ${IOS_RESOURCES})
+    target_include_directories(PC98PLAYERiOS PRIVATE apple ios)
+    target_compile_options(PC98PLAYERiOS PRIVATE -fobjc-arc)
+    target_compile_definitions(PC98PLAYERiOS PRIVATE $<$<CONFIG:Debug>:PC98PLAYER_TESTING>)
+    target_link_libraries(PC98PLAYERiOS PRIVATE pc98core "-framework Foundation" "-framework CoreGraphics" "-framework QuartzCore" "-framework UIKit" "-framework CoreText" "-framework AudioToolbox" "-framework AVFoundation" "-framework UniformTypeIdentifiers")
+    set_target_properties(PC98PLAYERiOS PROPERTIES
+      MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/ios/Info.plist.in"
+      MACOSX_BUNDLE_GUI_IDENTIFIER "jp.pc98player.ios"
+      XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "jp.pc98player.ios"
+      XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+      XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
+  else()
+    set(MAC_RESOURCES LICENSE THIRD-PARTY-ymfm-LICENSE.txt)
+    set_source_files_properties(${MAC_RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    add_executable(PC98PLAYER MACOSX_BUNDLE macos/main.mm apple/font.mm apple/GameLibrary.mm ${MAC_RESOURCES})
+    target_include_directories(PC98PLAYER PRIVATE apple)
+    target_compile_options(PC98PLAYER PRIVATE -fobjc-arc)
+    target_link_libraries(PC98PLAYER PRIVATE pc98core "-framework Cocoa" "-framework CoreText" "-framework AudioToolbox")
+    set_target_properties(PC98PLAYER PROPERTIES
+      MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist.in"
+      MACOSX_BUNDLE_BUNDLE_NAME "PC98PLAYER"
+      MACOSX_BUNDLE_GUI_IDENTIFIER "jp.pc98player.mac"
+      MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+      MACOSX_BUNDLE_BUNDLE_VERSION "1")
+  endif()
 else()
   find_package(Iconv REQUIRED)
   target_link_libraries(pc98core PUBLIC Iconv::Iconv)
 endif()
 include(CTest)
-if(BUILD_TESTING AND NOT WIN32)
+if(BUILD_TESTING AND NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
   add_executable(core_smoke tests/core_smoke.cpp)
   target_link_libraries(core_smoke PRIVATE pc98core)
   add_test(NAME core_smoke COMMAND core_smoke)
+  add_test(NAME core_with_overlay COMMAND core_smoke --overlay)
+  add_executable(overlay_smoke tests/overlay_smoke.cpp)
+  target_link_libraries(overlay_smoke PRIVATE pc98core)
+  add_test(NAME overlay_smoke COMMAND overlay_smoke)
 endif()

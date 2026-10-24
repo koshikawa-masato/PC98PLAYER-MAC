@@ -4,63 +4,14 @@
 #include "player.h"
 #include "hostfs.h"
 #include "font.h"
+#include "AudioOut.h"
+#import "GameLibrary.h"
 #include <algorithm>
 #include <deque>
 #include <memory>
 #include <mutex>
 #include <set>
 
-// The emulation and UI run on the main thread; only PCM crosses to AudioQueue.
-struct AudioOut {
-    AudioQueueRef queue = nullptr;
-    std::mutex mutex;
-    std::deque<int16_t> samples;
-    size_t capacity = 44100;
-    static void callback(void* context, AudioQueueRef queue, AudioQueueBufferRef buffer) {
-        auto* self = static_cast<AudioOut*>(context);
-        auto* dst = static_cast<int16_t*>(buffer->mAudioData);
-        size_t count = buffer->mAudioDataBytesCapacity / sizeof(int16_t);
-        {
-            std::lock_guard<std::mutex> lock(self->mutex);
-            for (size_t i = 0; i < count; ++i) {
-                dst[i] = self->samples.empty() ? 0 : self->samples.front();
-                if (!self->samples.empty()) self->samples.pop_front();
-            }
-        }
-        buffer->mAudioDataByteSize = buffer->mAudioDataBytesCapacity;
-        AudioQueueEnqueueBuffer(queue, buffer, 0, nullptr);
-    }
-    bool open(int rate) {
-        close();
-        capacity = (size_t)rate / 2; // at most 250 ms of stereo PCM
-        AudioStreamBasicDescription fmt = {};
-        fmt.mSampleRate = rate;
-        fmt.mFormatID = kAudioFormatLinearPCM;
-        fmt.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
-        fmt.mBytesPerPacket = fmt.mBytesPerFrame = 4;
-        fmt.mFramesPerPacket = 1; fmt.mChannelsPerFrame = 2; fmt.mBitsPerChannel = 16;
-        if (AudioQueueNewOutput(&fmt, callback, this, nullptr, nullptr, 0, &queue) != noErr) return false;
-        for (int i = 0; i < 3; ++i) {
-            AudioQueueBufferRef b;
-            if (AudioQueueAllocateBuffer(queue, 512 * 4, &b) != noErr) { close(); return false; }
-            callback(this, queue, b);
-        }
-        if (AudioQueueStart(queue, nullptr) != noErr) { close(); return false; }
-        return true;
-    }
-    void push(const std::vector<int16_t>& pcm) {
-        if (!queue) return;
-        std::lock_guard<std::mutex> lock(mutex);
-        if (samples.size() + pcm.size() > capacity) samples.clear();
-        samples.insert(samples.end(), pcm.begin(), pcm.end());
-    }
-    void clear() { std::lock_guard<std::mutex> lock(mutex); samples.clear(); }
-    void close() {
-        if (queue) { AudioQueueStop(queue, true); AudioQueueDispose(queue, true); queue = nullptr; }
-        clear();
-    }
-    ~AudioOut() { close(); }
-};
 static std::unique_ptr<Player> player;
 static AudioOut audio;
 static bool paused = false, captured = false, muted = false;
@@ -130,6 +81,9 @@ static void releaseInput() {
 @property(strong) GameView* view;
 @property(strong) NSTimer* timer;
 @property double nextFrame;
+@property(strong) NSMenu* libraryMenu;
+@property(strong) NSURL* sourceURL;
+@property BOOL sourceScoped;
 - (void)openPath:(NSString*)path;
 - (void)openGame:(id)sender;
 - (void)tick:(NSTimer*)timer;
@@ -210,6 +164,11 @@ static NSMenuItem* item(NSMenu* menu, NSString* title, SEL action, NSString* key
     NSMenuItem* file = [NSMenuItem new]; [bar addItem:file]; file.submenu = [[NSMenu alloc] initWithTitle:@"ファイル"];
     item(file.submenu, @"ゲームフォルダ／INIを開く…", @selector(openGame:), @"o");
     item(file.submenu, @"INIを編集…", @selector(editIni:), @"e");
+    item(file.submenu, @"NASに接続…", @selector(connectNAS:), @"");
+    NSMenuItem* library = [NSMenuItem new]; [file.submenu addItem:library];
+    library.title = @"登録したゲームフォルダ";
+    self.libraryMenu = [[NSMenu alloc] initWithTitle:library.title]; library.submenu = self.libraryMenu;
+    [self refreshLibrary];
     NSMenuItem* game = [NSMenuItem new]; [bar addItem:game]; game.submenu = [[NSMenu alloc] initWithTitle:@"ゲーム"];
     item(game.submenu, @"一時停止／再開", @selector(pause:), @"p");
     item(game.submenu, @"再起動（INIを再読込）", @selector(restart:), @"r");
@@ -250,7 +209,8 @@ static NSMenuItem* item(NSMenu* menu, NSString* title, SEL action, NSString* key
     releaseInput(); BOOL wasPaused = paused; paused = true; audio.clear();
     NSOpenPanel* panel = [NSOpenPanel openPanel]; panel.canChooseDirectories = YES;
     panel.canChooseFiles = YES; panel.allowsMultipleSelection = NO;
-    panel.message = @"ゲームフォルダ、PC98PLAYER.INI、または起動するBAT／COM／EXEを選んでください。";
+    panel.directoryURL = self.sourceURL;
+    panel.message = @"Mac内またはFinderで接続したNASのゲームフォルダ／INIを選んでください。データをアプリ内へ移動する必要はありません。";
     if ([panel runModal] == NSModalResponseOK) { paused = wasPaused; [self openPath:panel.URL.path]; }
     else paused = wasPaused;
 }
@@ -286,13 +246,21 @@ static NSMenuItem* item(NSMenu* menu, NSString* title, SEL action, NSString* key
     ps.sample_rate = std::clamp(ps.sample_rate, 8000, 192000);
     mouseMode = std::clamp(ini.geti("PC98PLAYER.MOUSELOCKDISABLE",0),0,2);
     mouseSpeed = std::clamp(ini.geti("PC98PLAYER.MOUSESPEED",100),1,1000);
+    NSURL* source = [NSURL fileURLWithPath:root isDirectory:YES];
+    BOOL scoped = [source startAccessingSecurityScopedResource];
     paused = true; audio.close();
     if (player) player->shutdown();
+    if (self.sourceScoped) [self.sourceURL stopAccessingSecurityScopedResource];
+    self.sourceURL = source; self.sourceScoped = scoped;
     player = std::make_unique<Player>();
     mac_install_font(ps.font_name, ps.font_shift);
     std::string error;
     if (!player->init(ps,&error)) { alert(ns(error)); player->shutdown(); player.reset(); return; }
     currentIniPath = iniPath; currentSettings = ps;
+    NSError* bookmarkError = nil;
+    if (![GameLibrary rememberURL:[NSURL fileURLWithPath:path isDirectory:dir] name:root.lastPathComponent error:&bookmarkError])
+        NSLog(@"ゲームフォルダの登録に失敗: %@",bookmarkError.localizedDescription);
+    [self refreshLibrary];
     self.window.representedFilename = iniPath;
     self.window.title = ps.title.empty() ? [@"PC98PLAYER — " stringByAppendingString:root.lastPathComponent] : ns(ps.title);
     [self.window setContentSize:NSMakeSize(640*ps.scale,400*ps.scale)];
@@ -335,6 +303,38 @@ static NSMenuItem* item(NSMenu* menu, NSString* title, SEL action, NSString* key
     if (path.length && [NSFileManager.defaultManager fileExistsAtPath:path]) [NSWorkspace.sharedWorkspace openURL:[NSURL fileURLWithPath:path]];
     else alert(@"INIはまだありません。「設定INI作成.html」で作成し、ゲームフォルダにPC98PLAYER.INIとして保存してください。");
 }
+- (void)refreshLibrary {
+    [self.libraryMenu removeAllItems];
+    NSArray* entries = GameLibrary.entries;
+    for (NSUInteger i=0; i<entries.count; ++i) {
+        NSMenuItem* entry = item(self.libraryMenu, entries[i][@"name"], @selector(openRecent:), @""); entry.tag = i;
+    }
+    if (!entries.count) { NSMenuItem* empty = [NSMenuItem new]; empty.title = @"フォルダを開くと登録されます"; empty.enabled = NO; [self.libraryMenu addItem:empty]; }
+}
+- (void)openRecent:(NSMenuItem*)sender {
+    NSArray* entries = GameLibrary.entries;
+    if ((NSUInteger)sender.tag >= entries.count) return;
+    NSError* error = nil; NSURL* url = [GameLibrary resolveEntry:entries[sender.tag] error:&error];
+    BOOL scoped = [url startAccessingSecurityScopedResource];
+    if (!url || ![url checkResourceIsReachableAndReturnError:&error])
+        alert(@"フォルダに接続できません。NASの場合はFinderで再接続してから開いてください。");
+    else [self openPath:url.path];
+    if (scoped) [url stopAccessingSecurityScopedResource];
+}
+- (void)connectNAS:(id)sender {
+    releaseInput(); BOOL previous = paused; paused = true; audio.clear();
+    NSAlert* dialog = [NSAlert new]; dialog.messageText = @"NASに接続";
+    dialog.informativeText = @"smb://サーバー名/共有名 を入力してください。接続と認証はFinderが行います。接続後、⌘Oで共有内のゲームフォルダを選びます。";
+    NSTextField* field = [[NSTextField alloc] initWithFrame:NSMakeRect(0,0,360,24)]; field.placeholderString = @"smb://nas.local/Games";
+    dialog.accessoryView = field; [dialog addButtonWithTitle:@"Finderで接続"]; [dialog addButtonWithTitle:@"キャンセル"];
+    if ([dialog runModal] == NSAlertFirstButtonReturn) {
+        NSURL* url = [NSURL URLWithString:field.stringValue];
+        if (![url.scheme.lowercaseString isEqual:@"smb"] || !url.host.length || url.user.length || url.password.length)
+            alert(@"ユーザー名やパスワードを含めず、smb://サーバー名/共有名 の形式で入力してください。");
+        else [NSWorkspace.sharedWorkspace openURL:url];
+    }
+    paused = previous; self.nextFrame = NSProcessInfo.processInfo.systemUptime;
+}
 - (void)toggleCapture:(id)sender { capture(!captured); }
 - (void)fullscreen:(id)sender { [self.window toggleFullScreen:nil]; }
 - (void)stopKey:(id)sender { if(player) { machine_key(player->m,0x60,true); machine_key(player->m,0x60,false); } }
@@ -354,6 +354,7 @@ static NSMenuItem* item(NSMenu* menu, NSString* title, SEL action, NSString* key
 - (void)applicationWillTerminate:(NSNotification*)n {
     [self.timer invalidate]; releaseInput(); audio.close();
     if (player) { player->shutdown(); player.reset(); }
+    if (self.sourceScoped) [self.sourceURL stopAccessingSecurityScopedResource];
 }
 - (void)quit:(id)sender { [NSApp terminate:nil]; }
 @end

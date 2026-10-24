@@ -60,6 +60,7 @@
     <ClCompile Include="core\egc.cpp" />
     <ClCompile Include="core\fontrom.cpp" />
     <ClCompile Include="core\hostfs.cpp" />
+    <ClCompile Include="core\hostfs_overlay.cpp" />
     <ClCompile Include="core\video.cpp" />
     <ClCompile Include="core\player.cpp" />
     <ClCompile Include="core\opna_renderer.cpp" />

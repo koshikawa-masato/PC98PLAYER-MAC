@@ -12,10 +12,12 @@
 #include <unistd.h>
 
 static void check(bool ok, const char* what) { if (!ok) throw std::runtime_error(what); }
-int main() {
+int main(int argc,char** argv) {
     char temporary[] = "/tmp/pc98player-test-XXXXXX";
     if (!mkdtemp(temporary)) return 1;
-    std::filesystem::path root(temporary);
+    std::filesystem::path root=std::filesystem::path(temporary)/"cache";
+    std::filesystem::create_directories(root);
+    bool overlay=argc>1 && std::string(argv[1])=="--overlay";
     std::unique_ptr<Player> p;
     try {
         // A real 8086 COM: fill text VRAM with a green 'A', then loop.
@@ -32,6 +34,7 @@ int main() {
         fputs("[PC98PLAYER]\nStart=TEST.COM\nMIDI=0\nRhythmROM=0\n",f); fclose(f);
         Ini ini; check(ini.load((root/"PC98PLAYER.INI").string()),"INI read");
         PlayerSettings s; check(player_settings_from_ini(ini,root.string(),&s),"INI settings");
+        if(overlay) hostfs::set_overlay(root.string(),(std::filesystem::path(temporary)/"saves").string());
         p = std::make_unique<Player>(); std::string error;
         check(p->init(s,&error),"player init");
         for (int i=0;i<5;++i) p->run_frame();
@@ -58,10 +61,12 @@ int main() {
         check(p->m->tvram[0]=='A',"VRAM restored");
         const std::string japanese = "日本語.TXT";
         check(hostfs::from_sjis(hostfs::to_sjis(japanese))==japanese,"CP932 filename roundtrip");
-        p->shutdown(); p.reset(); std::filesystem::remove_all(root);
+        p->shutdown(); p.reset();
+        if(overlay) check(!std::filesystem::exists(root/"PC98PLAYER.SAV"),"state stored outside disposable cache");
+        hostfs::set_overlay("",""); std::filesystem::remove_all(temporary);
         puts("PASS: DOS COM, CPU, VRAM, PCM, keyboard, mouse, state save/load, CP932"); return 0;
     } catch(const std::exception& e) {
         fprintf(stderr,"FAIL: %s\n",e.what());
-        if(p) p->shutdown(); std::filesystem::remove_all(root); return 1;
+        if(p) p->shutdown(); hostfs::set_overlay("",""); std::filesystem::remove_all(temporary); return 1;
     }
 }

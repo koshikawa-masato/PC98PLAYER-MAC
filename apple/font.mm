@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #import <CoreText/CoreText.h>
 #include "font.h"
 #include "machine.h"

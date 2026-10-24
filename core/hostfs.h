@@ -35,3 +35,7 @@ namespace hostfs {
     std::string from_sjis(const std::string& s);   // ゲストの名前 → ホストの名前
     std::string to_sjis(const std::string& s);     // ホストの名前 → ゲストの名前
 }
+
+// Optional copy-on-write layer: source game data stays disposable/read-only.
+// Configure only when no native handles are open. Empty roots disable it.
+namespace hostfs { void set_overlay(const std::string& source, const std::string& saved); }
