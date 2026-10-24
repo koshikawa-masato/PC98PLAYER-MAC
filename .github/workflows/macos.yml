@@ -1,0 +1,23 @@
+name: macOS
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ymfm
+        run: ./tools/fetch_ymfm.sh
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64'
+      - name: Build
+        run: cmake --build build --parallel 3
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Package
+        run: ditto -c -k --sequesterRsrc --keepParent build/PC98PLAYER.app build/PC98PLAYER-macOS-universal.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PC98PLAYER-macOS-universal
+          path: build/PC98PLAYER-macOS-universal.zip

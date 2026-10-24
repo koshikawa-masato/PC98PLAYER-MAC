@@ -1,4 +1,72 @@
-# PC98PLAYER
+# PC98PLAYER for Mac
+
+[Imaha486/PC98PLAYER](https://github.com/Imaha486/PC98PLAYER) のmacOS移植版です。既存のCPU・DOS・デバイスエミュレーションを共有し、画面・入力・音声・フォントをmacOS標準APIで実装しています。現在は初期移植版です。
+
+## macOS版のビルドと起動
+
+macOS 11以降。ビルドにはXcode Command Line Tools、CMake、Gitが必要です。
+
+```sh
+./build_mac.sh
+open build/PC98PLAYER.app
+```
+
+Apple SiliconとIntelの両方を含むUniversalアプリを作成し、自動テストを実行します。FM音源のymfmはスクリプトが固定コミットを取得します。ビルド後のアプリは外部ライブラリのインストールなしで動きます。
+
+1. アプリを開き、⌘Oでゲームフォルダまたは `PC98PLAYER.INI` を選びます。BAT／COM／EXEの直接指定も可能です。
+2. INIがあれば `Start=` を実行します。INIがない場合は、フォルダ内の起動ファイルを選びます。設定は自動保存しません。
+3. INIの作成には同梱の `設定INI作成.html` を利用できます。既存のWindows版INIも基本的に読み込めますが、ホスト側の絶対パスはMac上のパスに直してください。`Root=` の相対パスはINIのある場所を基準にします。
+
+```sh
+# ターミナルからゲームフォルダを指定
+build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER "/path/to/game"
+# INIを変更せずに起動ファイルを指定
+build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER "/path/to/game" --start GAME.BAT
+```
+
+| 操作 | macOS版 |
+|---|---|
+| ゲームフォルダ／INIを開く | ⌘O |
+| INIを既定のアプリで開く | ⌘E |
+| 一時停止／再開 | ⌘P |
+| INIを再読込して再起動 | ⌘R |
+| 全画面切り替え | ⌘F |
+| マウス捕捉 | 画面をクリック（最初のクリックは捕捉のみ） |
+| マウス捕捉／解放 | F12（Macの設定によりfn＋F12） |
+| STOPキー | ⌘. または「ゲーム」メニュー |
+| ステート保存／読込 | 「ゲーム」メニュー、8スロット |
+| GRPH／CTRL | Option／Control |
+
+`MouseLockDisable=1` はマウス無効、`=2` は捕捉しない共有モードです。フォーカスが外れるとキーとマウス捕捉を解放します。ステートはゲームフォルダの `PC98PLAYER.SAV` に保存します。フォントの既定値はmacOSのヒラギノ角ゴシックです。`Font=` で変更できます。
+
+## macOS版の実装範囲と検証
+
+- Cocoaのウインドウとメニュー、640×400描画、拡大・全画面、物理キー入力とマウス入力。
+- AudioQueueによる16bitステレオ出力。ymfm、BEEP、PCM86、CD-DAは共通コアで合成します。
+- CoreTextによる日本語／ANKフォント生成。ROM・ゲームデータ・フォントファイルは同梱しません。
+- 既存INIの読み込み、DOSプログラム／バッチ実行、ステート保存／復元。
+- Apple Silicon上で自作COMの起動、日本語描画、実際のキー入力、メニューからのステート復元を確認済みです。コアの自動テストはarm64とRosetta上のx86_64で成功しています。Intel実機と市販ゲームの実プレイは未確認です。
+
+Windows版のF11設定画面、メモリ／コードエディタ、インストールアシスタント、ゲームパッド、MIDI出力、実機フロッピードライブ操作UIは未移植です。macOS版ではMIDIデバイスを無効にするため、ゲーム側ではFM音源を選んでください。ディスクイメージはINIから指定できますが、実行中の交換UIはまだありません。Windows版の操作説明は下記の原版README・マニュアルを参照してください。
+
+署名・公証・配布用リリースはまだ用意していません。GitHub ActionsではUniversalアプリのビルドとテストを行い、ZIPを成果物として保存します。
+
+ゲームを用意せずに確認するには、オリジナルの小さなDOSデモを生成できます。
+
+```sh
+python3 tools/make_mac_demo.py  # out/smoke-game に生成。既存ファイルは上書きしません
+build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER out/smoke-game
+ctest --test-dir build --output-on-failure
+# 12フレーム実行し、画面をTIFFに保存して終了
+build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER out/smoke-game --frames 12 --screenshot /tmp/pc98player.tiff
+```
+
+自動テストはCOMロード・CPU実行・VRAM・ステレオ音声生成・ymfmのSSG発音・キー状態・ステート保存／復元・CP932ファイル名変換を確認します。ビルド方法は `build_mac.sh` と `.github/workflows/macos.yml` にあります。ソース本体のMITライセンス、ymfmのBSD 3-Clauseライセンスはアプリ内のResourcesにも収録します。
+
+---
+
+# 原版README（Windows版）
+
 
 PC-9801 のゲームを、**インストール済みのフォルダごと** Windows 11 のアプリのように動かすプレイヤーです。
 GMPV3 Studio の「必要なデバイスの振る舞いと DOS ファンクションだけを自前で持つ小さな仮想 PC-98」を、
