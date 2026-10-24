@@ -52,10 +52,16 @@ bool copyToSave(const std::string& p, const Mapping& m) {
     if(!parents(m.saved)) return false;
     if(exists(m.saved)) return true;
     if(hidden(m) || !exists(p)) return true;
-    std::error_code e; fs::copy_file(p,m.saved,fs::copy_options::overwrite_existing,e);
-    if(e) return false;
-    // A source on a read-only share may have no user write bit.
-    fs::permissions(m.saved,fs::perms::owner_write,fs::perm_options::add,e); return !e;
+    static unsigned serial=0;
+    std::string stage;
+    do { stage=m.saved+".pc98-copy-"+std::to_string(++serial); } while(exists(stage));
+    std::error_code e; fs::copy_file(p,stage,fs::copy_options::none,e);
+    // Never expose a partial copy as saved data, including on a full disk.
+    if(!e) fs::permissions(stage,fs::perms::owner_write,fs::perm_options::add,e);
+    if(e || !hostfs_platform::rename(stage,m.saved)) {
+        std::error_code cleanup; fs::remove(stage,cleanup); return false;
+    }
+    return true;
 }
 bool parentExists(const std::string& path) {
     std::string parent=fs::path(path).parent_path().generic_string();
