@@ -61,7 +61,7 @@ elseif(APPLE)
       XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
       XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
   else()
-    set(MAC_RESOURCES LICENSE THIRD-PARTY-ymfm-LICENSE.txt)
+    set(MAC_RESOURCES LICENSE THIRD-PARTY-ymfm-LICENSE.txt macos/PC98PLAYER.icns)
     set_source_files_properties(${MAC_RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     add_executable(PC98PLAYER MACOSX_BUNDLE macos/main.mm apple/font.mm apple/GameLibrary.mm ${MAC_RESOURCES})
     target_include_directories(PC98PLAYER PRIVATE apple)

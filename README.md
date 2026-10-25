@@ -61,7 +61,18 @@ build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER "/path/to/game" --start GAME.BAT
 
 Windows版のF11設定画面、メモリ／コードエディタ、インストールアシスタント、ゲームパッド、MIDI出力、実機フロッピードライブ操作UIは未移植です。macOS版ではMIDIデバイスを無効にするため、ゲーム側ではFM音源を選んでください。ディスクイメージはINIから指定できますが、実行中の交換UIはまだありません。Windows版の操作説明は下記の原版README・マニュアルを参照してください。
 
-署名・公証・配布用リリースはまだ用意していません。GitHub ActionsではUniversalアプリのビルドとテストを行い、ZIPを成果物として保存します。
+App Storeを使わず、Developer ID Applicationで署名したUniversal版をZIPで配布する構成です。配布手順は次のとおりです。macOS 11以降のIntel（x86_64）とApple Silicon（arm64）を1つのアプリに含みます。
+
+```sh
+# 保存済みのnotarytoolキーチェーンプロファイルを指定
+MAC_NOTARY_PROFILE="your-profile-name" ./tools/package_mac.sh
+# 署名だけを検証する場合（公証未完了の検証用ZIP）
+./tools/package_mac.sh --sign-only
+```
+
+スクリプトはビルドとテスト、両CPUの収録確認、Developer ID署名、Hardened Runtimeとタイムスタンプの付与、Appleへの公証申請、チケットの添付、Gatekeeper検証を実行します。成功時は `out/distribution/PC98PLAYER-0.1.0-macOS-universal.zip` とSHA-256を出力します。ZIPを展開したアプリをApplicationsへ移して使えます。ゲームデータは同梱しません。複数のDeveloper ID証明書がある場合は `MAC_SIGN_IDENTITY` で署名する証明書を指定します。
+
+公証プロファイルは事前に `xcrun notarytool store-credentials` で保存してください。認証情報はソースやスクリプトに書きません。`--sign-only` の成果物には `signed-not-notarized` を付け、公証・Gatekeeper検証を通した配布版と区別します。GitHub Actionsの通常ビルドは未署名の検証用ZIPを成果物として保存します。
 
 ゲームを用意せずに確認するには、オリジナルの小さなDOSデモを生成できます。
 
