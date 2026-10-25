@@ -64,7 +64,11 @@ Windows版のF11設定画面、メモリ／コードエディタ、インスト�
 App Storeを使わず、Developer ID Applicationで署名したUniversal版をZIPで配布する構成です。配布手順は次のとおりです。macOS 11以降のIntel（x86_64）とApple Silicon（arm64）を1つのアプリに含みます。
 
 ```sh
-# 保存済みのnotarytoolキーチェーンプロファイルを指定
+# Xcodeに保存済みのApple Accountで公証（新しいパスワードは不要）
+./tools/package_mac.sh
+# Apple側の処理が終わった後、再申請せず公証済みアプリを出力
+./tools/package_mac.sh --resume-xcode
+# notarytoolのキーチェーンプロファイルを使う場合
 MAC_NOTARY_PROFILE="your-profile-name" ./tools/package_mac.sh
 # 署名だけを検証する場合（公証未完了の検証用ZIP）
 ./tools/package_mac.sh --sign-only
@@ -72,7 +76,9 @@ MAC_NOTARY_PROFILE="your-profile-name" ./tools/package_mac.sh
 
 スクリプトはビルドとテスト、両CPUの収録確認、Developer ID署名、Hardened Runtimeとタイムスタンプの付与、Appleへの公証申請、チケットの添付、Gatekeeper検証を実行します。成功時は `out/distribution/PC98PLAYER-0.1.0-macOS-universal.zip` とSHA-256を出力します。ZIPを展開したアプリをApplicationsへ移して使えます。ゲームデータは同梱しません。複数のDeveloper ID証明書がある場合は `MAC_SIGN_IDENTITY` で署名する証明書を指定します。
 
-公証プロファイルは事前に `xcrun notarytool store-credentials` で保存してください。認証情報はソースやスクリプトに書きません。`--sign-only` の成果物には `signed-not-notarized` を付け、公証・Gatekeeper検証を通した配布版と区別します。GitHub Actionsの通常ビルドは未署名の検証用ZIPを成果物として保存します。
+標準の公証経路は、Xcodeにサインイン済みのApple Accountを利用します。署名済みアプリからmacOSアーカイブを作り、`xcodebuild -exportArchive` のDeveloper IDアップロードと `-exportNotarizedApp` を使います。Apple側で処理中の場合はXcode Organizerでアーカイブの状況を確認し、準備完了後に `--resume-xcode` を実行します。アーカイブと再開情報は `out/distribution` に保存され、再開時は重複申請しません。
+
+`MAC_NOTARY_PROFILE` を指定する場合は、事前に `xcrun notarytool store-credentials` で保存したプロファイルを利用します。どちらの経路も認証情報をソースやスクリプトに書きません。`--sign-only` の成果物には `signed-not-notarized` を付け、公証・Gatekeeper検証を通した配布版と区別します。GitHub Actionsの通常ビルドは未署名の検証用ZIPを成果物として保存します。
 
 ゲームを用意せずに確認するには、オリジナルの小さなDOSデモを生成できます。
 

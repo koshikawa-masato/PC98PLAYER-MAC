@@ -5,14 +5,10 @@ cd "$(dirname "$0")/.."
 mode=notarize
 case "${1:-}" in
   --sign-only) mode=sign-only ;;
+  --resume-xcode) exec python3 tools/notarize_mac_xcode.py --resume --output "$PWD/out/distribution" ;;
   '') ;;
-  *) echo 'Usage: tools/package_mac.sh [--sign-only]' >&2; exit 2 ;;
+  *) echo 'Usage: tools/package_mac.sh [--sign-only|--resume-xcode]' >&2; exit 2 ;;
 esac
-if [ "$mode" = notarize ] && [ -z "${MAC_NOTARY_PROFILE:-}" ]; then
-  echo 'Set MAC_NOTARY_PROFILE to an existing notarytool keychain profile.' >&2
-  echo 'Use --sign-only to prepare an explicitly unnotarized package.' >&2
-  exit 2
-fi
 identity=${MAC_SIGN_IDENTITY:-}
 if [ -z "$identity" ]; then
   identities=$(security find-identity -v -p codesigning | sed -n '/"Developer ID Application:/s/.*) \([A-F0-9]*\) .*/\1/p')
@@ -43,8 +39,12 @@ base="PC98PLAYER-$version-macOS-universal"
 archive="$output/$base-signed-not-notarized.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
 if [ "$mode" = sign-only ]; then
-  shasum -a 256 "$archive" > "$archive.sha256"
+  (cd "$output" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256"
   printf '\nSigned, NOT notarized: %s\n' "$archive"
+  exit 0
+fi
+if [ -z "${MAC_NOTARY_PROFILE:-}" ]; then
+  python3 tools/notarize_mac_xcode.py --app "$app" --output "$output"
   exit 0
 fi
 report="$output/$base-notarization.json"
@@ -61,5 +61,5 @@ xcrun stapler validate "$app"
 spctl --assess --type execute --verbose=2 "$app"
 archive="$output/$base.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
-shasum -a 256 "$archive" > "$archive.sha256"
+(cd "$output" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256"
 printf '\nReady for distribution: %s\n' "$archive"
