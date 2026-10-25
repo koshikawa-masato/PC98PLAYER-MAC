@@ -448,3 +448,7 @@ PC98PLAYER はネット接続・他プロセスへの干渉・キー入力の記
 本体は MIT。ゲーム・ROM・フォントは一切同梱しません。FM 音源は ymfm（BSD 3-Clause, Aaron Giles）を使います。CD-DA の MP3・FLAC の展開には dr_mp3 / dr_flac（David Reid。パブリックドメイン／MIT-0。`third_party/dr_libs/` に同梱）を使います。
 他のエミュレータのソースコードは使っていません（EGC・PCM86・XMS/EMS・MPU なども独自実装）。
 `core/opna_renderer.*` と `core/rhythm_rom.*` は GMPV3 Studio Core から流用しています。
+
+### 256色表示
+
+ゲームのINIに `VideoColors=256` を指定すると、BIOS不要のPC-9821拡張グラフィックを利用できます。既定は16色です。現在はRance IVの640×400表示を確認しています。[対応範囲と検証](docs/256-color.md)を参照してください。
