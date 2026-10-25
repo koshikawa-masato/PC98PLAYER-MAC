@@ -1,6 +1,59 @@
-# PC98PLAYER for Mac / iOS
+# PC98PLAYER for Mac
 
 [Imaha486/PC98PLAYER](https://github.com/Imaha486/PC98PLAYER) のmacOS移植版です。既存のCPU・DOS・デバイスエミュレーションを共有し、画面・入力・音声・フォントをmacOS標準APIで実装しています。現在は初期移植版です。
+
+## Mac版のダウンロードとスタート
+
+**macOS 11以降／Intel（x86_64）・Apple Silicon（arm64）両対応。** XcodeやCMakeのインストールは不要です。App Storeを使わず、Developer ID署名・Apple公証済みのアプリを配布しています。
+
+- [Mac版ZIPをダウンロード](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases/latest/download/PC98PLAYER-0.1.0-macOS-universal.zip)
+- [リリース一覧・変更内容](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases)
+- [動作確認用の自作デモ](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases/latest/download/PC98PLAYER-demo.zip)（市販ゲーム・ROMは含みません）
+
+### 1. ZIPを展開してアプリを起動する
+
+ダウンロードした `PC98PLAYER-0.1.0-macOS-universal.zip` をダブルクリックして展開し、`PC98PLAYER.app` を「アプリケーション」フォルダへ移します。そこからアプリをダブルクリックします。初回にmacOSから起動確認が表示された場合は、配布元を確認して「開く」を選んでください。
+
+次の案内が出れば起動できています。この黒い画面でゲームフォルダを選びます。
+
+![起動直後の案内画面](docs/images/mac-startup.png)
+
+### 2. ゲームデータのフォルダを用意する
+
+ご自身で利用できるPC-98ゲームの、インストール済みフォルダをMac内またはNASへ置きます。**アプリとゲームデータは別々に置きます。** 配布ZIPにゲーム本体・ROM・フォントファイルは含みません。
+
+まず動作だけ確認したい場合は、上の自作デモZIPを展開してください。`PC98PLAYER-demo` フォルダには `DEMO.COM` と起動設定の `PC98PLAYER.INI` が入っています。以下のスクリーンショットも、このデモを使っています。
+
+### 3. ⌘Oでゲームフォルダを選ぶ
+
+アプリで **⌘O** を押すか、「ファイル → ゲームフォルダ／INIを開く…」を選びます。ゲームフォルダを開き、右下の「開く」を押します。`PC98PLAYER.INI` や起動するBAT／COM／EXEを直接選ぶこともできます。
+
+![デモフォルダを開いた選択画面](docs/images/mac-open-folder.png)
+
+`PC98PLAYER.INI` がある場合は、その `Start=` に指定されたファイルを実行します。INIがなく起動ファイルが未指定の場合は、続いてフォルダ内のBAT／COM／EXEを選びます。既存のWindows版INIを使う場合、`C:\...` などのホスト側の絶対パスはMac用に変更してください。
+
+### 4. ゲームを操作する
+
+デモでは日本語の案内が表示され、キーを押すと文字が出ます。画像の `pc98` は、実際にキーボードから入力したものです。ご自身のゲームでは、そのゲームの起動画面が表示されます。
+
+![デモ実行中の画面とキー入力](docs/images/mac-running.png)
+
+マウスを使うゲームでは、画面を一度クリックするとマウスを捕捉します。最初のクリックは捕捉用です。**F12**（Macの設定によっては **fn＋F12**）でマウスを解放できます。終了は **⌘Q** です。
+
+### 基本操作
+
+| 操作 | macOS版 |
+|---|---|
+| ゲームフォルダ／INIを開く | ⌘O |
+| INIを既定のアプリで開く | ⌘E |
+| 一時停止／再開 | ⌘P |
+| INIを再読込して再起動 | ⌘R |
+| 全画面切り替え | ⌘F |
+| マウス捕捉 | 画面をクリック（最初のクリックは捕捉のみ） |
+| マウス捕捉／解放 | F12（Macの設定によりfn＋F12） |
+| STOPキー | ⌘. または「ゲーム」メニュー |
+| ステート保存／読込 | 「ゲーム」メニュー、8スロット |
+| GRPH／CTRL | Option／Control |
 
 ## ローカル／NASのゲームフォルダ
 
@@ -9,6 +62,10 @@
 - **Mac内**：⌘Oで任意のゲームフォルダを選択。
 - **NAS**：「ファイル → NASに接続…」で `smb://サーバー/共有名` をFinderへ渡して接続し、⌘Oで共有内のゲームフォルダを選択。Finderで接続済みならそのまま選べます。
 - 選んだ場所はbookmarkに記録し、「登録したゲームフォルダ」から再び開けます。NASが未接続なら再接続を案内します。認証はFinderが行い、アプリはNASのパスワードを保存しません。
+
+NASの接続先は `smb://サーバー名/共有名` の形式で入力し、「Finderで接続」を押します。Finder側で認証・接続が完了してから、アプリの⌘Oで共有内のゲームフォルダを選んでください。下の `nas.local/Games` は入力例です。
+
+![NASの接続先の入力例](docs/images/mac-nas.png)
 
 Mac版はデータを取り込まず直接使います。ゲーム内セーブやステートは選んだゲームフォルダへ書き込むため、NAS側にも書き込み権限が必要です。アプリをNASに置く必要はありません。
 
@@ -27,7 +84,7 @@ Apple SiliconとIntelの両方を含むUniversalアプリを作成し、自動�
 
 1. アプリを開き、⌘Oでゲームフォルダまたは `PC98PLAYER.INI` を選びます。BAT／COM／EXEの直接指定も可能です。
 2. INIがあれば `Start=` を実行します。INIがない場合は、フォルダ内の起動ファイルを選びます。設定は自動保存しません。
-3. INIの作成には同梱の `設定INI作成.html` を利用できます。既存のWindows版INIも基本的に読み込めますが、ホスト側の絶対パスはMac上のパスに直してください。`Root=` の相対パスはINIのある場所を基準にします。
+3. INIの作成にはソースリポジトリの [設定INI作成.html](設定INI作成.html) を利用できます。既存のWindows版INIも基本的に読み込めますが、ホスト側の絶対パスはMac上のパスに直してください。`Root=` の相対パスはINIのある場所を基準にします。
 
 ```sh
 # ターミナルからゲームフォルダを指定
@@ -35,19 +92,6 @@ build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER "/path/to/game"
 # INIを変更せずに起動ファイルを指定
 build/PC98PLAYER.app/Contents/MacOS/PC98PLAYER "/path/to/game" --start GAME.BAT
 ```
-
-| 操作 | macOS版 |
-|---|---|
-| ゲームフォルダ／INIを開く | ⌘O |
-| INIを既定のアプリで開く | ⌘E |
-| 一時停止／再開 | ⌘P |
-| INIを再読込して再起動 | ⌘R |
-| 全画面切り替え | ⌘F |
-| マウス捕捉 | 画面をクリック（最初のクリックは捕捉のみ） |
-| マウス捕捉／解放 | F12（Macの設定によりfn＋F12） |
-| STOPキー | ⌘. または「ゲーム」メニュー |
-| ステート保存／読込 | 「ゲーム」メニュー、8スロット |
-| GRPH／CTRL | Option／Control |
 
 `MouseLockDisable=1` はマウス無効、`=2` は捕捉しない共有モードです。フォーカスが外れるとキーとマウス捕捉を解放します。ステートはゲームフォルダの `PC98PLAYER.SAV` に保存します。フォントの既定値はmacOSのヒラギノ角ゴシックです。`Font=` で変更できます。
 
