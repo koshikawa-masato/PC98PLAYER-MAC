@@ -106,8 +106,15 @@ static NSBitmapImageRep* framebuffer() {
     [[NSColor blackColor] setFill]; NSRectFill(self.bounds);
     if (!player) {
         NSString* text = @"PC98PLAYER for Mac\n⌘O でゲームフォルダを開く";
-        NSDictionary* attrs = @{NSFontAttributeName:[NSFont systemFontOfSize:22], NSForegroundColorAttributeName:NSColor.whiteColor};
-        [text drawAtPoint:NSMakePoint(40, self.bounds.size.height/2) withAttributes:attrs];
+        NSMutableParagraphStyle* paragraph = [NSMutableParagraphStyle new];
+        paragraph.alignment = NSTextAlignmentCenter;
+        NSDictionary* attrs = @{NSFontAttributeName:[NSFont systemFontOfSize:22], NSForegroundColorAttributeName:NSColor.whiteColor,
+            NSParagraphStyleAttributeName:paragraph};
+        CGFloat width = MAX(1,self.bounds.size.width-80);
+        NSRect measured = [text boundingRectWithSize:NSMakeSize(width,CGFLOAT_MAX)
+            options:NSStringDrawingUsesLineFragmentOrigin|NSStringDrawingUsesFontLeading attributes:attrs];
+        CGFloat height = ceil(measured.size.height);
+        [text drawInRect:NSMakeRect(NSMidX(self.bounds)-width/2,NSMidY(self.bounds)-height/2,width,height) withAttributes:attrs];
         return;
     }
     double scale = std::min(self.bounds.size.width/640, self.bounds.size.height/400);
