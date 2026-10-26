@@ -58,6 +58,7 @@
     <ClCompile Include="core\bios.cpp" />
     <ClCompile Include="core\dos.cpp" />
     <ClCompile Include="core\egc.cpp" />
+    <ClCompile Include="core\pegc.cpp" />
     <ClCompile Include="core\fontrom.cpp" />
     <ClCompile Include="core\hostfs.cpp" />
     <ClCompile Include="core\video.cpp" />
