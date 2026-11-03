@@ -1,0 +1,22 @@
+{
+  "verified_date_jst": "2026-11-03",
+  "version": "0.1.1",
+  "build": "2",
+  "product_source_commit": "79b4c4e909e871c4053167d5b371b0a2f86bac22",
+  "upstream": "Ver.261103-2 (48d088e)",
+  "minimum_macos": "11.0",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "archive": "PC98PLAYER-0.1.1-macOS-universal.zip",
+  "sha256": "193eb68cbcc72d6576d72bf815ad79bdd4d17329d8a788892abf1e8a632c3eab",
+  "signature": "Developer ID Application; Hardened Runtime; timestamp; both architectures verified after fresh ZIP extraction",
+  "notarization": "Xcode exportNotarizedApp succeeded; stapler validate passed after fresh ZIP extraction",
+  "gatekeeper": "accepted; source=Notarized Developer ID",
+  "regression_tests": {
+    "arm64": "4/4 passed",
+    "x86_64_rosetta": "4/4 passed",
+    "alice_soft_titles": "17 startup/opening checks; no full-playthrough claim"
+  }
+}

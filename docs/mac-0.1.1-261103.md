@@ -14,11 +14,13 @@
 
 `out/distribution/PC98PLAYER-0.1.1/PC98PLAYER.app`
 
-`out/distribution/PC98PLAYER-0.1.1-macOS-universal-signed-not-notarized.zip`
+`out/distribution/PC98PLAYER-0.1.1-macOS-universal.zip`
 
 ZIPと同じ場所に `.sha256` を付けたチェックサムがあります。**macOS 11以降、x86_64／arm64を1本の実行ファイルに収録**しています。ゲーム、BIOS ROM、商用フォントは同梱しません。
 
-Developer ID署名、Hardened Runtime、タイムスタンプを付与し、ZIPを展開したアプリについて両アーキテクチャの署名とDeveloper IDの要件を検証済みです。公証は現在のXcodeにアカウントがなく `exportArchive No Accounts` で停止しました。以前の一時保存先のXcodeも開発ツール一式が残っていないため使用できません。**この成果物は未公証です。** 公証済みの配布版としては扱いません。公開済み0.1.0のZIPは置き換えていません。
+**Developer ID署名・Apple公証済みです。** Hardened Runtimeとタイムスタンプを付与し、公証完了後に書き出したZIPを新しいフォルダへ展開して、両CPUの署名・Developer IDの要件・公証チケット・Gatekeeper・SHA-256を検証しました。Gatekeeperは `accepted` / `source=Notarized Developer ID` です。初回の公証はXcode未ログインで停止していましたが、サインイン後に完了しました。[検証情報](mac-0.1.1-notarization.json)も記録しています。
+
+配布は [GitHub Releasesのmac-v0.1.1](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases/tag/mac-v0.1.1) から行います。以前の公証済み0.1.0とその配布物も残しています。
 
 ## 確認結果
 

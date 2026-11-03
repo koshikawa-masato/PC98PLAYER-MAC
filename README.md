@@ -2,19 +2,19 @@
 
 [Imaha486/PC98PLAYER](https://github.com/Imaha486/PC98PLAYER) のmacOS移植版です。既存のCPU・DOS・デバイスエミュレーションを共有し、画面・入力・音声・フォントをmacOS標準APIで実装しています。現在は初期移植版です。
 
-**2026-11-03：本家 Ver.261103-2 を取り込み、Mac 0.1.1のUniversalバイナリを作成しました。** [変更点・成果物・検証結果](docs/mac-0.1.1-261103.md)。ローカルの0.1.1はDeveloper ID署名済み・未公証です。以下のGitHub公開ZIPは公証済み0.1.0です。
+**2026-11-03：本家 Ver.261103-2 を取り込み、Mac 0.1.1のUniversalバイナリを作成しました。** [変更点・成果物・検証結果](docs/mac-0.1.1-261103.md)。Mac 0.1.1はDeveloper ID署名・Apple公証済みです。以下のZIPから入手できます。
 
 ## Mac版のダウンロードとスタート
 
 **macOS 11以降／Intel（x86_64）・Apple Silicon（arm64）両対応。** XcodeやCMakeのインストールは不要です。App Storeを使わず、Developer ID署名・Apple公証済みのアプリを配布しています。
 
-- [Mac版ZIPをダウンロード](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases/latest/download/PC98PLAYER-0.1.0-macOS-universal.zip)
+- [Mac版ZIPをダウンロード](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases/latest/download/PC98PLAYER-0.1.1-macOS-universal.zip)
 - [リリース一覧・変更内容](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases)
 - [動作確認用の自作デモ](https://github.com/koshikawa-masato/PC98PLAYER-MAC/releases/latest/download/PC98PLAYER-demo.zip)（市販ゲーム・ROMは含みません）
 
 ### 1. ZIPを展開してアプリを起動する
 
-ダウンロードした `PC98PLAYER-0.1.0-macOS-universal.zip` をダブルクリックして展開し、`PC98PLAYER.app` を「アプリケーション」フォルダへ移します。そこからアプリをダブルクリックします。初回にmacOSから起動確認が表示された場合は、配布元を確認して「開く」を選んでください。
+ダウンロードした `PC98PLAYER-0.1.1-macOS-universal.zip` をダブルクリックして展開し、`PC98PLAYER.app` を「アプリケーション」フォルダへ移します。そこからアプリをダブルクリックします。初回にmacOSから起動確認が表示された場合は、配布元を確認して「開く」を選んでください。
 
 次の案内が出れば起動できています。この黒い画面でゲームフォルダを選びます。
 
