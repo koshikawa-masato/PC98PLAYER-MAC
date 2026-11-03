@@ -2,7 +2,7 @@
 
 [Imaha486/PC98PLAYER](https://github.com/Imaha486/PC98PLAYER) のmacOS移植版です。既存のCPU・DOS・デバイスエミュレーションを共有し、画面・入力・音声・フォントをmacOS標準APIで実装しています。現在は初期移植版です。
 
-**2026-11-02：本家 Ver.261102-2 を取り込みました。** [変更点とアリスソフト17タイトルの起動確認結果](docs/upstream-sync-20261102.md)。現在の配布ZIPとは別のソース更新です。
+**2026-11-03：本家 Ver.261103-2 を取り込み、Mac 0.1.1のUniversalバイナリを作成しました。** [変更点・成果物・検証結果](docs/mac-0.1.1-261103.md)。ローカルの0.1.1はDeveloper ID署名済み・未公証です。以下のGitHub公開ZIPは公証済み0.1.0です。
 
 ## Mac版のダウンロードとスタート
 
@@ -120,7 +120,7 @@ MAC_NOTARY_PROFILE="your-profile-name" ./tools/package_mac.sh
 ./tools/package_mac.sh --sign-only
 ```
 
-スクリプトはビルドとテスト、両CPUの収録確認、Developer ID署名、Hardened Runtimeとタイムスタンプの付与、Appleへの公証申請、チケットの添付、Gatekeeper検証を実行します。成功時は `out/distribution/PC98PLAYER-0.1.0-macOS-universal.zip` とSHA-256を出力します。ZIPを展開したアプリをApplicationsへ移して使えます。ゲームデータは同梱しません。複数のDeveloper ID証明書がある場合は `MAC_SIGN_IDENTITY` で署名する証明書を指定します。
+スクリプトはビルドとテスト、両CPUの収録確認、Developer ID署名、Hardened Runtimeとタイムスタンプの付与、Appleへの公証申請、チケットの添付、Gatekeeper検証を実行します。成功時は `out/distribution/PC98PLAYER-<バージョン>-macOS-universal.zip` とSHA-256を出力します。ZIPを展開したアプリをApplicationsへ移して使えます。ゲームデータは同梱しません。複数のDeveloper ID証明書がある場合は `MAC_SIGN_IDENTITY` で署名する証明書を指定します。
 
 標準の公証経路は、Xcodeにサインイン済みのApple Accountを利用します。署名済みアプリからmacOSアーカイブを作り、`xcodebuild -exportArchive` のDeveloper IDアップロードと `-exportNotarizedApp` を使います。Apple側で処理中の場合はXcode Organizerでアーカイブの状況を確認し、準備完了後に `--resume-xcode` を実行します。アーカイブと再開情報は `out/distribution` に保存され、再開時は重複申請しません。
 
@@ -412,7 +412,6 @@ PC-98 の漢字 ROM・ANK ROM を、**本物の ROM も第三者のビットマ�
 - ADPCM（86 ボード＋ちびおと、SPB 等の ADPCM RAM）
 - MPU-PC98II のインテリジェントモードの演奏機能（UART モードと、D0h 系の直接送信・問い合わせのみ対応）
 - 保護モードのうち、ページング・仮想 86 モード・タスク切り替え、VCPI/DPMI（EMM386 の下で動く DOS エクステンダ）。自分で保護モードに切り替えて拡張メモリを使うソフトは動きます（`ExtMemMB=`）
-- PEGC の 1MB より上に見せる VRAM（F00000h～）
 - N88-BASIC(86)（ROM）で動くソフト（ブートモードで ROM の BASIC を呼ぶと、その旨を表示して終了）
 
 256 色（PC-9821 の PEGC）の対応範囲と試験は [docs/256-color.md](docs/256-color.md) を参照してください。
